@@ -51,7 +51,7 @@ public class UserController {
      * @param updateUser DTO, содержащее вносимые в информацию о пользователе изменения
      * @return DTO измененного пользователя
      */
-    @PutMapping
+    @PatchMapping("/{userId}")
     public UserDto updateUser(@PathVariable Long userId,
                               @RequestBody UserDto updateUser) {
         return userService.updateUser(userId, updateUser);

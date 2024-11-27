@@ -1,9 +1,13 @@
 package ru.practicum.shareit.user;
 
 import java.util.Collection;
+import java.util.Map;
 import java.util.Optional;
 
 public interface UserStorage {
+
+    String EMAIL = "email";
+    String NAME = "name";
 
     Collection<User> getAllUsers();
 
@@ -11,7 +15,7 @@ public interface UserStorage {
 
     Optional<User> addUser(User newUser);
 
-    Optional<User> updateUser(Long userId, User updateUser);
+    Optional<User> updateUser(Long userId, Map<String, Object> updatedField);
 
     void deleteAllUsers();
 

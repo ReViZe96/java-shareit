@@ -3,9 +3,7 @@ package ru.practicum.shareit.user;
 
 import org.springframework.stereotype.Component;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Optional;
+import java.util.*;
 
 @Component("inMemoryUserStorage")
 public class InMemoryUserStorage implements UserStorage {
@@ -24,13 +22,23 @@ public class InMemoryUserStorage implements UserStorage {
     public Optional<User> addUser(User newUser) {
         long id = getNextId();
         newUser.setId(id);
-        return Optional.ofNullable(users.put(id, newUser));
+        users.put(id, newUser);
+        return Optional.of(newUser);
     }
 
-    public Optional<User> updateUser(Long userId, User updateUser) {
-        users.remove(userId);
-        updateUser.setId(userId);
-        return Optional.ofNullable(users.put(userId, updateUser));
+    public Optional<User> updateUser(Long userId, Map<String, Object> updatedField) {
+        User updatingUser = users.get(userId);
+        Set<Map.Entry<String, Object>> entry = updatedField.entrySet();
+        for (Map.Entry<String, Object> field : entry) {
+            if (field.getKey().equals(EMAIL)) {
+                updatingUser.setEmail(field.getValue().toString());
+            }
+            if (field.getKey().equals(NAME)) {
+                updatingUser.setName(field.getValue().toString());
+            }
+        }
+        users.put(userId, updatingUser);
+        return Optional.of(updatingUser);
     }
 
     public void deleteAllUsers() {
