@@ -1,26 +1,26 @@
 package ru.practicum.shareit.user;
 
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Collection;
 
 @RestController
 @RequestMapping(path = "/users")
+@RequiredArgsConstructor
 public class UserController {
 
-    private UserService userService;
-
-    public UserController(UserService userService) {
-        this.userService = userService;
-    }
+    private final UserService userService;
 
 
     /**
      * Просмотр списка всех пользователей.
      */
     @GetMapping
-    public Collection<UserDto> getAllUsers() {
-        return userService.getAllUsers();
+    public ResponseEntity<Collection<UserDto>> getAllUsers() {
+        return ResponseEntity.ok(userService.getAllUsers());
     }
 
     /**
@@ -29,8 +29,8 @@ public class UserController {
      * @param userId идентификатор возвращаемого пользователя
      */
     @GetMapping("/{userId}")
-    public UserDto getUserById(@PathVariable Long userId) {
-        return userService.getUserById(userId);
+    public ResponseEntity<UserDto> getUserById(@PathVariable Long userId) {
+        return ResponseEntity.ok(userService.getUserById(userId));
     }
 
     /**
@@ -40,8 +40,8 @@ public class UserController {
      * @return DTO добавленного пользователя
      */
     @PostMapping
-    public UserDto addUser(@RequestBody UserDto newUser) {
-        return userService.addUser(newUser);
+    public ResponseEntity<UserDto> addUser(@RequestBody UserDto newUser) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(userService.addUser(newUser));
     }
 
     /**
@@ -52,17 +52,18 @@ public class UserController {
      * @return DTO измененного пользователя
      */
     @PatchMapping("/{userId}")
-    public UserDto updateUser(@PathVariable Long userId,
-                              @RequestBody UserDto updateUser) {
-        return userService.updateUser(userId, updateUser);
+    public ResponseEntity<UserDto> updateUser(@PathVariable Long userId,
+                                              @RequestBody UserDto updateUser) {
+        return ResponseEntity.ok(userService.updateUser(userId, updateUser));
     }
 
     /**
      * Удаление всех пользователей из системы.
      */
     @DeleteMapping
-    public void deleteAllUsers() {
+    public ResponseEntity<String> deleteAllUsers() {
         userService.deleteAllUsers();
+        return ResponseEntity.ok().body("Все пользователи успешно удалены");
     }
 
     /**
@@ -71,8 +72,9 @@ public class UserController {
      * @param userId идентификатор удаляемого пользователя
      */
     @DeleteMapping("/{userId}")
-    public void deleteUserById(@PathVariable Long userId) {
+    public ResponseEntity<String> deleteUserById(@PathVariable Long userId) {
         userService.deleteUserById(userId);
+        return ResponseEntity.ok().body("Пользователь с id = " + userId + "удалён");
     }
 
 }

@@ -2,7 +2,8 @@ package ru.practicum.shareit.item;
 
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
-import ru.practicum.shareit.user.User;
+import ru.practicum.shareit.item.model.Item;
+import ru.practicum.shareit.user.model.User;
 
 import java.util.*;
 import java.util.stream.Collectors;

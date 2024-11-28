@@ -1,18 +1,18 @@
 package ru.practicum.shareit.item;
 
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/items")
+@RequiredArgsConstructor
 public class ItemController {
 
-    private ItemService itemService;
-
-    public ItemController(ItemService itemService) {
-        this.itemService = itemService;
-    }
+    private final ItemService itemService;
 
 
     /**
@@ -21,8 +21,8 @@ public class ItemController {
      * @param ownerId идентификатор пользователя — владельца вещи.
      */
     @GetMapping
-    public List<ItemDto> getAllItems(@RequestHeader("X-Sharer-User-Id") Long ownerId) {
-        return itemService.getAllItems(ownerId);
+    public ResponseEntity<List<ItemDto>> getAllItems(@RequestHeader("X-Sharer-User-Id") Long ownerId) {
+        return ResponseEntity.ok(itemService.getAllItems(ownerId));
     }
 
     /**
@@ -31,8 +31,8 @@ public class ItemController {
      * @param itemId идентификатор вещи
      */
     @GetMapping("/{itemId}")
-    public ItemDto getItemById(@PathVariable Long itemId) {
-        return itemService.getItemById(itemId);
+    public ResponseEntity<ItemDto> getItemById(@PathVariable Long itemId) {
+        return ResponseEntity.ok(itemService.getItemById(itemId));
     }
 
     /**
@@ -43,9 +43,9 @@ public class ItemController {
      * @return DTO добавленной вещи
      */
     @PostMapping
-    public ItemDto addItem(@RequestBody ItemDto newItem,
-                           @RequestHeader("X-Sharer-User-Id") Long ownerId) {
-        return itemService.addItem(newItem, ownerId);
+    public ResponseEntity<ItemDto> addItem(@RequestBody ItemDto newItem,
+                                           @RequestHeader("X-Sharer-User-Id") Long ownerId) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(itemService.addItem(newItem, ownerId));
     }
 
     /**
@@ -58,10 +58,10 @@ public class ItemController {
      * @return DTO измененной вещи
      */
     @PatchMapping("/{itemId}")
-    public ItemDto editItem(@PathVariable Long itemId,
-                            @RequestBody ItemDto editedItem,
-                            @RequestHeader("X-Sharer-User-Id") Long ownerId) {
-        return itemService.editItem(itemId, editedItem, ownerId);
+    public ResponseEntity<ItemDto> editItem(@PathVariable Long itemId,
+                                            @RequestBody ItemDto editedItem,
+                                            @RequestHeader("X-Sharer-User-Id") Long ownerId) {
+        return ResponseEntity.ok(itemService.editItem(itemId, editedItem, ownerId));
     }
 
     /**
@@ -71,8 +71,8 @@ public class ItemController {
      * @return Список вещей, содержащих текст из поискового запроса в названии или описании.
      */
     @GetMapping("/search")
-    public List<ItemDto> findItems(@RequestParam("text") String text) {
-        return itemService.findItems(text);
+    public ResponseEntity<List<ItemDto>> findItems(@RequestParam("text") String text) {
+        return ResponseEntity.ok(itemService.findItems(text));
     }
 
 }

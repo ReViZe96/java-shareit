@@ -1,40 +1,40 @@
 package ru.practicum.shareit.user;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.practicum.shareit.errors.NotFoundException;
 import ru.practicum.shareit.errors.SameEmailException;
 import ru.practicum.shareit.errors.ValidationException;
+import ru.practicum.shareit.user.model.User;
 
 import java.util.*;
 
-@Slf4j
 @Service
+@Slf4j
+@RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 
-    private UserStorage userStorage;
-
-    public UserServiceImpl(UserStorage userStorage) {
-        this.userStorage = userStorage;
-    }
+    private final UserStorage userStorage;
+    private final UserMapper userMapper;
 
 
     public Collection<UserDto> getAllUsers() {
         log.info("Запрос списка всех пользователей");
-        return userStorage.getAllUsers().stream().map(UserMapper::mapToUserDto).toList();
+        return userStorage.getAllUsers().stream().map(userMapper::userToUserDto).toList();
     }
 
     public UserDto getUserById(Long userId) {
         log.info("Запрос информации о пользователе с id = {}", userId);
-        return userStorage.getUserById(userId).map(UserMapper::mapToUserDto).get();
+        return userStorage.getUserById(userId).map(userMapper::userToUserDto).get();
     }
 
     public UserDto addUser(UserDto newUser) {
         log.info("Получен запрос на добавление пользователя с именем {}", newUser.getName());
         checkUserEmail(newUser);
         log.info("Добавляемый пользователь валиден");
-        User user = UserMapper.mapToUser(newUser);
-        return userStorage.addUser(user).map(UserMapper::mapToUserDto).get();
+        User user = userMapper.userDtoToUser(newUser);
+        return userStorage.addUser(user).map(userMapper::userToUserDto).get();
     }
 
     public UserDto updateUser(Long userId, UserDto updateUser) {
@@ -51,7 +51,7 @@ public class UserServiceImpl implements UserService {
         Optional<User> existUser = userStorage.getUserById(userId);
         if (existUser.isPresent()) {
             log.info("Обновляемый пользователь существует в системе");
-            return userStorage.updateUser(userId, updatedField).map(UserMapper::mapToUserDto).get();
+            return userStorage.updateUser(userId, updatedField).map(userMapper::userToUserDto).get();
         } else {
             throw new NotFoundException("Обновляемый пользователь с id = " + userId + " не найден в системе");
         }

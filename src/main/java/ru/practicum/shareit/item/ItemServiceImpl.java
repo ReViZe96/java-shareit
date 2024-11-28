@@ -1,36 +1,35 @@
 package ru.practicum.shareit.item;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.practicum.shareit.errors.NotFoundException;
 import ru.practicum.shareit.errors.NotOwnerTryEditException;
 import ru.practicum.shareit.errors.ValidationException;
-import ru.practicum.shareit.user.User;
+import ru.practicum.shareit.item.model.Item;
+import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.UserStorage;
 
 import java.util.*;
 
-@Slf4j
 @Service
+@Slf4j
+@RequiredArgsConstructor
 public class ItemServiceImpl implements ItemService {
 
-    private ItemStorage itemStorage;
-    private UserStorage userStorage;
-
-    public ItemServiceImpl(ItemStorage itemStorage, UserStorage userStorage) {
-        this.itemStorage = itemStorage;
-        this.userStorage = userStorage;
-    }
+    private final ItemStorage itemStorage;
+    private final UserStorage userStorage;
+    private final ItemMapper itemMapper;
 
 
     public List<ItemDto> getAllItems(Long ownerId) {
         log.info("Запрос всех вещей пользователя с id = {}", ownerId);
-        return itemStorage.getAllItems(ownerId).stream().map(ItemMapper::mapToItemDto).toList();
+        return itemStorage.getAllItems(ownerId).stream().map(itemMapper::itemToItemDto).toList();
     }
 
     public ItemDto getItemById(Long itemId) {
         log.info("Запрос информации о вещи с id = {}", itemId);
-        return itemStorage.getItemById(itemId).map(ItemMapper::mapToItemDto).get();
+        return itemStorage.getItemById(itemId).map(itemMapper::itemToItemDto).get();
     }
 
     public ItemDto addItem(ItemDto newItem, Long ownerId) {
@@ -41,8 +40,9 @@ public class ItemServiceImpl implements ItemService {
         isOwnerExist(ownerId);
         log.info("Добавляемая вещь валидна");
         User owner = userStorage.getUserById(ownerId).get();
-        Item item = ItemMapper.mapToItem(newItem, owner);
-        return itemStorage.addItem(item).map(ItemMapper::mapToItemDto).get();
+        Item item = itemMapper.itemDtoToItem(newItem);
+        item.setOwner(owner);
+        return itemStorage.addItem(item).map(itemMapper::itemToItemDto).get();
     }
 
     public ItemDto editItem(Long itemId, ItemDto editedItem, Long ownerId) {
@@ -69,7 +69,7 @@ public class ItemServiceImpl implements ItemService {
         if (existItem.isPresent()) {
             log.info("Обновляемая вещь существует в системе");
             if (existItem.get().getOwner().equals(owner)) {
-                return itemStorage.editItem(itemId, updatedField, owner).map(ItemMapper::mapToItemDto).get();
+                return itemStorage.editItem(itemId, updatedField, owner).map(itemMapper::itemToItemDto).get();
             } else {
                 throw new NotOwnerTryEditException("Пользователю " + owner.getName() +
                         " запрещено редактировать информацию о вещи " +
@@ -87,7 +87,7 @@ public class ItemServiceImpl implements ItemService {
             return Collections.emptyList();
         } else {
             log.info("Получен поисковой запрос: {}", text);
-            return itemStorage.findItems(text).stream().map(ItemMapper::mapToItemDto).toList();
+            return itemStorage.findItems(text).stream().map(itemMapper::itemToItemDto).toList();
         }
     }
 
