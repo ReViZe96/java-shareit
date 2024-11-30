@@ -69,7 +69,8 @@ public class ItemServiceImpl implements ItemService {
         if (existItem.isPresent()) {
             log.info("Обновляемая вещь существует в системе");
             if (existItem.get().getOwner().equals(owner)) {
-                return itemStorage.editItem(itemId, updatedField, owner).map(itemMapper::itemToItemDto).get();
+                itemStorage.editItem(itemId, updatedField, owner);
+                return itemStorage.getItemById(itemId).map(itemMapper::itemToItemDto).get();
             } else {
                 throw new NotOwnerTryEditException("Пользователю " + owner.getName() +
                         " запрещено редактировать информацию о вещи " +

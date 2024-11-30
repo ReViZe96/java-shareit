@@ -51,7 +51,8 @@ public class UserServiceImpl implements UserService {
         Optional<User> existUser = userStorage.getUserById(userId);
         if (existUser.isPresent()) {
             log.info("Обновляемый пользователь существует в системе");
-            return userStorage.updateUser(userId, updatedField).map(userMapper::userToUserDto).get();
+            userStorage.updateUser(userId, updatedField);
+            return userStorage.getUserById(userId).map(userMapper::userToUserDto).get();
         } else {
             throw new NotFoundException("Обновляемый пользователь с id = " + userId + " не найден в системе");
         }

@@ -7,6 +7,7 @@ import ru.practicum.shareit.user.model.User;
 import java.util.*;
 
 @Component("inMemoryUserStorage")
+//@Primary
 public class InMemoryUserStorage implements UserStorage {
 
     private HashMap<Long, User> users = new HashMap<>();
@@ -27,7 +28,7 @@ public class InMemoryUserStorage implements UserStorage {
         return Optional.of(newUser);
     }
 
-    public Optional<User> updateUser(Long userId, Map<String, Object> updatedField) {
+    public void updateUser(Long userId, Map<String, Object> updatedField) {
         User updatingUser = users.get(userId);
         Set<Map.Entry<String, Object>> entry = updatedField.entrySet();
         for (Map.Entry<String, Object> field : entry) {
@@ -39,7 +40,6 @@ public class InMemoryUserStorage implements UserStorage {
             }
         }
         users.put(userId, updatingUser);
-        return Optional.of(updatingUser);
     }
 
     public void deleteAllUsers() {

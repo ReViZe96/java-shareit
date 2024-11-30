@@ -17,7 +17,7 @@ public interface UserStorage {
 
     Optional<User> addUser(User newUser);
 
-    Optional<User> updateUser(Long userId, Map<String, Object> updatedField);
+    void updateUser(Long userId, Map<String, Object> updatedField);
 
     void deleteAllUsers();
 

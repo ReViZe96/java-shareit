@@ -9,6 +9,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Component("inMemoryItemStorage")
+//@Primary
 public class InMemoryItemStorage implements ItemStorage {
 
     private HashMap<Long, Item> items = new HashMap<>();
@@ -28,7 +29,7 @@ public class InMemoryItemStorage implements ItemStorage {
         return Optional.of(item);
     }
 
-    public Optional<Item> editItem(Long itemId, Map<String, Object> updatedField, User owner) {
+    public void editItem(Long itemId, Map<String, Object> updatedField, User owner) {
         Item updatingItem = items.get(itemId);
         Set<Map.Entry<String, Object>> entry = updatedField.entrySet();
         for (Map.Entry<String, Object> field : entry) {
@@ -44,7 +45,6 @@ public class InMemoryItemStorage implements ItemStorage {
         }
         updatingItem.setOwner(owner);
         items.put(itemId, updatingItem);
-        return Optional.of(updatingItem);
     }
 
     public List<Item> findItems(String text) {

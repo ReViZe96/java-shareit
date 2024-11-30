@@ -20,7 +20,7 @@ public interface ItemStorage {
 
     Optional<Item> addItem(Item item);
 
-    Optional<Item> editItem(Long itemId, Map<String, Object> updatedField, User owner);
+    void editItem(Long itemId, Map<String, Object> updatedField, User owner);
 
     List<Item> findItems(String text);
 
