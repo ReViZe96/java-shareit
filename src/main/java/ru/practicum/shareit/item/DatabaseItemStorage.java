@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
+import ru.practicum.shareit.item.model.Comment;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.user.UserRepository;
 import ru.practicum.shareit.user.model.User;
@@ -17,6 +18,7 @@ import java.util.*;
 public class DatabaseItemStorage implements ItemStorage {
 
     private final ItemRepository itemRepository;
+    private final CommentRepository commentRepository;
     private final UserRepository userRepository;
 
 
@@ -68,6 +70,12 @@ public class DatabaseItemStorage implements ItemStorage {
         Set<Item> withContainedDescription = new HashSet<>(itemRepository.findAllByDescriptionContainingIgnoreCase(text));
         withContainedName.addAll(withContainedDescription);
         return withContainedName.stream().toList();
+    }
+
+    @Override
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public Optional<Comment> addComment(Comment comment) {
+        return Optional.of(commentRepository.save(comment));
     }
 
 }

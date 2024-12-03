@@ -13,14 +13,17 @@ public class InMemoryUserStorage implements UserStorage {
     private HashMap<Long, User> users = new HashMap<>();
 
 
+    @Override
     public Collection<User> getAllUsers() {
         return users.values();
     }
 
+    @Override
     public Optional<User> getUserById(Long userId) {
         return Optional.ofNullable(users.get(userId));
     }
 
+    @Override
     public Optional<User> addUser(User newUser) {
         long id = getNextId();
         newUser.setId(id);
@@ -28,6 +31,7 @@ public class InMemoryUserStorage implements UserStorage {
         return Optional.of(newUser);
     }
 
+    @Override
     public void updateUser(Long userId, Map<String, Object> updatedField) {
         User updatingUser = users.get(userId);
         Set<Map.Entry<String, Object>> entry = updatedField.entrySet();
@@ -42,10 +46,12 @@ public class InMemoryUserStorage implements UserStorage {
         users.put(userId, updatingUser);
     }
 
+    @Override
     public void deleteAllUsers() {
         users.clear();
     }
 
+    @Override
     public void deleteUserById(Long userId) {
         users.remove(userId);
     }

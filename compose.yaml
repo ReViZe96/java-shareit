@@ -54,3 +54,9 @@ services:
                       user_id bigint REFERENCES users(id),
                       item_id bigint REFERENCES items(id)
           );
+          CREATE TABLE IF NOT EXISTS comments (
+                      id serial PRIMARY KEY,
+                      text varchar(5000) NOT NULL,
+                      user_id bigint REFERENCES users(id),
+                      item_id bigint REFERENCES items(id)
+        );

@@ -22,6 +22,7 @@ public class ItemController {
      */
     @GetMapping
     public ResponseEntity<List<ItemDto>> getAllItems(@RequestHeader("X-Sharer-User-Id") Long ownerId) {
+        //add field comments to response
         return ResponseEntity.ok(itemService.getAllItems(ownerId));
     }
 
@@ -32,6 +33,7 @@ public class ItemController {
      */
     @GetMapping("/{itemId}")
     public ResponseEntity<ItemDto> getItemById(@PathVariable Long itemId) {
+        //add field comments to response
         return ResponseEntity.ok(itemService.getItemById(itemId));
     }
 
@@ -73,6 +75,22 @@ public class ItemController {
     @GetMapping("/search")
     public ResponseEntity<List<ItemDto>> findItems(@RequestParam("text") String text) {
         return ResponseEntity.ok(itemService.findItems(text));
+    }
+
+    /**
+     * Добавление отзыва о вещи, бывшей в бронировании.
+     * Отзыв может оставлять только пользователь, который действительно брал вещь в аренду.
+     *
+     * @param itemId     идентификатор вещи, о которой будет оставлен отзыв
+     * @param newComment DTO добавляемого отзыва
+     * @param authorId   идентификатор пользователя-автора создаваемого отзыва
+     * @return DTO добавленного отзыва
+     */
+    @PostMapping("/{itemId}/comment")
+    public ResponseEntity<CommentDto> addComment(@PathVariable Long itemId,
+                                                 @RequestBody CommentDto newComment,
+                                                 @RequestHeader("X-Sharer-User-Id") Long authorId) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(itemService.addComment(itemId, newComment, authorId));
     }
 
 }

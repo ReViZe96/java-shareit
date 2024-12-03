@@ -3,9 +3,13 @@ package ru.practicum.shareit.item;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import ru.practicum.shareit.booking.BookingStorage;
+import ru.practicum.shareit.booking.model.Booking;
+import ru.practicum.shareit.booking.model.BookingFilter;
 import ru.practicum.shareit.errors.NotFoundException;
 import ru.practicum.shareit.errors.ForbidenForUserOperationException;
 import ru.practicum.shareit.errors.ValidationException;
+import ru.practicum.shareit.item.model.Comment;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.UserStorage;
@@ -19,7 +23,9 @@ public class ItemServiceImpl implements ItemService {
 
     private final ItemStorage itemStorage;
     private final UserStorage userStorage;
+    private final BookingStorage bookingStorage;
     private final ItemMapper itemMapper;
+    private final CommentMapper commentMapper;
 
 
     public List<ItemDto> getAllItems(Long ownerId) {
@@ -92,6 +98,15 @@ public class ItemServiceImpl implements ItemService {
         }
     }
 
+    public CommentDto addComment(Long itemId, CommentDto newComment, Long authorId) {
+        log.info("Получен запрос на добавление отзыва на вещь с id = {} пользователя с id = {}", itemId, authorId);
+        Map<Item, User> validEntities = isUserCanAddComment(itemId, authorId);
+        Comment comment = commentMapper.commentDtoToComment(newComment);
+        comment.setCommentedItem(validEntities.keySet().iterator().next());
+        comment.setAuthorName(validEntities.values().iterator().next());
+        return itemStorage.addComment(comment).map(commentMapper::commentToCommentDto).get();
+    }
+
 
     private void checkItemName(ItemDto item) {
         String name = item.getName();
@@ -121,6 +136,29 @@ public class ItemServiceImpl implements ItemService {
         } else {
             return owner;
         }
+    }
+
+    private Map<Item, User> isUserCanAddComment(Long itemId, Long authorId) {
+        Optional<User> author = userStorage.getUserById(authorId);
+        if (author.isEmpty()) {
+            throw new NotFoundException("Пользователь c id = " + authorId + " не найден");
+        }
+        Optional<Item> existItem = itemStorage.getItemById(itemId);
+        if (existItem.isEmpty()) {
+            throw new NotFoundException("Вещь с id = " + itemId + " не найдена");
+        }
+        List<Booking> itemBookingsByAuthor = bookingStorage.getAllItemBookings(existItem.get(), BookingFilter.ALL.name())
+                .stream()
+                .filter(b -> authorId.equals(b.getRequestedUser().getId()))
+                .toList();
+        if (itemBookingsByAuthor.isEmpty()) {
+            throw new ForbidenForUserOperationException("Пользователь " + author.get().getName() + " не имеет права " +
+                    "оставлять отзыв на вещь " + existItem.get().getName() + " т.к. никогда не брал её в аренду");
+        }
+        log.info("Пользователь {} имеет право оставить отзыв на вещь {}", author.get().getName(), existItem.get().getName());
+        HashMap<Item, User> validEntities = new HashMap<>();
+        validEntities.put(existItem.get(), author.get());
+        return validEntities;
     }
 
 }

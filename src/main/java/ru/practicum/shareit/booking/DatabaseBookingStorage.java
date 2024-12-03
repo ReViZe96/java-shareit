@@ -19,22 +19,27 @@ public class DatabaseBookingStorage implements BookingStorage {
     private final BookingRepository bookingRepository;
 
 
+    @Override
     public List<Booking> getAllUserBookings(User requestedUser, String state) {
         return bookingRepository.findByRequestedUserAndStatus(requestedUser, state);
     }
 
+    @Override
     public List<Booking> getAllItemBookings(Item item, String state) {
         return bookingRepository.findByRequestedItemAndStatus(item, state);
     }
 
+    @Override
     public Optional<Booking> getBookingById(Long bookingId) {
         return bookingRepository.findById(bookingId);
     }
 
+    @Override
     public Optional<Booking> addBooking(Booking newBooking) {
         return Optional.of(bookingRepository.save(newBooking));
     }
 
+    @Override
     public Optional<Booking> approveBooking(Booking booking, boolean approved) {
         if (approved) {
             booking.setStatus(BookingStatus.APPROVED);
