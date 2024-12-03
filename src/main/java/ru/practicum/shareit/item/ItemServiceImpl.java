@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.practicum.shareit.errors.NotFoundException;
-import ru.practicum.shareit.errors.NotOwnerTryEditException;
+import ru.practicum.shareit.errors.ForbidenForUserOperationException;
 import ru.practicum.shareit.errors.ValidationException;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.user.model.User;
@@ -72,7 +72,7 @@ public class ItemServiceImpl implements ItemService {
                 itemStorage.editItem(itemId, updatedField, owner);
                 return itemStorage.getItemById(itemId).map(itemMapper::itemToItemDto).get();
             } else {
-                throw new NotOwnerTryEditException("Пользователю " + owner.getName() +
+                throw new ForbidenForUserOperationException("Пользователю " + owner.getName() +
                         " запрещено редактировать информацию о вещи " +
                         existItem.get().getName() + " т.к. владельцем вещи является другой пользователь: " +
                         existItem.get().getOwner().getName());
