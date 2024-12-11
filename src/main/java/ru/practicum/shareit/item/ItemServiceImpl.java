@@ -9,6 +9,8 @@ import ru.practicum.shareit.booking.model.BookingFilter;
 import ru.practicum.shareit.errors.NotFoundException;
 import ru.practicum.shareit.errors.ForbidenForUserOperationException;
 import ru.practicum.shareit.errors.ValidationException;
+import ru.practicum.shareit.item.dto.CommentDto;
+import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.model.Comment;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.user.model.User;
@@ -30,12 +32,12 @@ public class ItemServiceImpl implements ItemService {
 
     public List<ItemDto> getAllItems(Long ownerId) {
         log.info("Запрос всех вещей пользователя с id = {}", ownerId);
-        return itemStorage.getAllItems(ownerId).stream().map(itemMapper::itemToItemDto).toList();
+        return itemStorage.getAllItems(ownerId).stream().map(i -> itemMapper.itemToItemDto(i, true)).toList();
     }
 
     public ItemDto getItemById(Long itemId) {
         log.info("Запрос информации о вещи с id = {}", itemId);
-        return itemStorage.getItemById(itemId).map(itemMapper::itemToItemDto).get();
+        return itemStorage.getItemById(itemId).map(i -> itemMapper.itemToItemDto(i, false)).get();
     }
 
     public ItemDto addItem(ItemDto newItem, Long ownerId) {
@@ -48,7 +50,7 @@ public class ItemServiceImpl implements ItemService {
         User owner = userStorage.getUserById(ownerId).get();
         Item item = itemMapper.itemDtoToItem(newItem);
         item.setOwner(owner);
-        return itemStorage.addItem(item).map(itemMapper::itemToItemDto).get();
+        return itemStorage.addItem(item).map(i -> itemMapper.itemToItemDto(i, false)).get();
     }
 
     public ItemDto editItem(Long itemId, ItemDto editedItem, Long ownerId) {
@@ -76,7 +78,7 @@ public class ItemServiceImpl implements ItemService {
             log.info("Обновляемая вещь существует в системе");
             if (existItem.get().getOwner().equals(owner)) {
                 itemStorage.editItem(itemId, updatedField, owner);
-                return itemStorage.getItemById(itemId).map(itemMapper::itemToItemDto).get();
+                return itemStorage.getItemById(itemId).map(i -> itemMapper.itemToItemDto(i, false)).get();
             } else {
                 throw new ForbidenForUserOperationException("Пользователю " + owner.getName() +
                         " запрещено редактировать информацию о вещи " +
@@ -94,7 +96,7 @@ public class ItemServiceImpl implements ItemService {
             return Collections.emptyList();
         } else {
             log.info("Получен поисковой запрос: {}", text);
-            return itemStorage.findItems(text).stream().map(itemMapper::itemToItemDto).toList();
+            return itemStorage.findItems(text).stream().map(i -> itemMapper.itemToItemDto(i, false)).toList();
         }
     }
 
@@ -147,7 +149,7 @@ public class ItemServiceImpl implements ItemService {
         if (existItem.isEmpty()) {
             throw new NotFoundException("Вещь с id = " + itemId + " не найдена");
         }
-        List<Booking> itemBookingsByAuthor = bookingStorage.getAllItemBookings(existItem.get(), BookingFilter.ALL.name())
+        List<Booking> itemBookingsByAuthor = bookingStorage.getAllItemBookings(existItem.get(), BookingFilter.ALL)
                 .stream()
                 .filter(b -> authorId.equals(b.getRequestedUser().getId()))
                 .toList();

@@ -4,6 +4,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import ru.practicum.shareit.item.dto.CommentDto;
+import ru.practicum.shareit.item.dto.ItemDto;
 
 import java.util.List;
 
@@ -22,7 +24,6 @@ public class ItemController {
      */
     @GetMapping
     public ResponseEntity<List<ItemDto>> getAllItems(@RequestHeader("X-Sharer-User-Id") Long ownerId) {
-        //add field comments to response
         return ResponseEntity.ok(itemService.getAllItems(ownerId));
     }
 
@@ -33,7 +34,6 @@ public class ItemController {
      */
     @GetMapping("/{itemId}")
     public ResponseEntity<ItemDto> getItemById(@PathVariable Long itemId) {
-        //add field comments to response
         return ResponseEntity.ok(itemService.getItemById(itemId));
     }
 

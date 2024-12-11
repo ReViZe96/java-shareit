@@ -49,18 +49,19 @@ public class DatabaseItemStorage implements ItemStorage {
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public void editItem(Long itemId, Map<String, Object> updatedField, User owner) {
         Set<Map.Entry<String, Object>> entry = updatedField.entrySet();
+        Item item = itemRepository.findById(itemId).get();
         for (Map.Entry<String, Object> field : entry) {
             if (field.getKey().equals(NAME)) {
-                itemRepository.setNameById(itemId, field.getValue().toString());
+                item.setName(field.getValue().toString());
             }
             if (field.getKey().equals(DESCRIPTION)) {
-                itemRepository.setDescriptionById(itemId, field.getValue().toString());
+                item.setDescription(field.getValue().toString());
             }
             if (field.getKey().equals(AVAILABLE)) {
-                itemRepository.setAvailableById(itemId, (Boolean) field.getValue());
+                item.setAvailable((Boolean) field.getValue());
             }
         }
-        itemRepository.setOwnerById(itemId, owner.getId());
+        itemRepository.save(item);
     }
 
     @Override

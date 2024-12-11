@@ -5,12 +5,12 @@ import lombok.Data;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.user.model.User;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 
 @Data
 @Entity
 @Table(name = "bookings")
-public class Booking {
+public class Booking implements Comparable<Booking> {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -21,17 +21,28 @@ public class Booking {
     private BookingStatus status;
 
     @Column(name = "reserve_start")
-    private Instant start;
+    private LocalDateTime start;
 
     @Column(name = "reserve_end")
-    private Instant end;
+    private LocalDateTime end;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "user_id")
     private User requestedUser;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "item_id")
     private Item requestedItem;
+
+    @Override
+    public int compareTo(Booking booking) {
+        if (this.getStart().equals(booking.getStart())) {
+            return 0;
+        } else if (this.getStart().isBefore(booking.getStart())) {
+            return -1;
+        } else {
+            return 1;
+        }
+    }
 
 }

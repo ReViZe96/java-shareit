@@ -42,14 +42,16 @@ public class DatabaseUserStorage implements UserStorage {
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public void updateUser(Long userId, Map<String, Object> updatedField) {
         Set<Map.Entry<String, Object>> entry = updatedField.entrySet();
+        User user = userRepository.findById(userId).get();
         for (Map.Entry<String, Object> field : entry) {
             if (field.getKey().equals(EMAIL)) {
-                userRepository.setEmailById(userId, field.getValue().toString());
+                user.setEmail(field.getValue().toString());
             }
             if (field.getKey().equals(NAME)) {
-                userRepository.setNameById(userId, field.getValue().toString());
+                user.setName(field.getValue().toString());
             }
         }
+        userRepository.save(user);
     }
 
     @Override

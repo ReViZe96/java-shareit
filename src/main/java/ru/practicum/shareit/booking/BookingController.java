@@ -4,6 +4,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import ru.practicum.shareit.booking.dto.BookingRequestDto;
+import ru.practicum.shareit.booking.dto.BookingResponseDto;
 
 import java.util.List;
 
@@ -25,8 +27,8 @@ public class BookingController {
      *                        (по умолчанию - возвращаются все бронирования текущего пользователя)
      */
     @GetMapping
-    public ResponseEntity<List<BookingDto>> getAllUserBookings(@RequestHeader("X-Sharer-User-Id") Long requestedUserId,
-                                                               @RequestParam(defaultValue = "ALL", required = false) String state) {
+    public ResponseEntity<List<BookingResponseDto>> getAllUserBookings(@RequestHeader("X-Sharer-User-Id") Long requestedUserId,
+                                                                       @RequestParam(defaultValue = "ALL", required = false) String state) {
         return ResponseEntity.ok().body(bookingService.getAllUserBookings(requestedUserId, state));
     }
 
@@ -39,8 +41,8 @@ public class BookingController {
      *                вещей текущего пользователя-владельца
      */
     @GetMapping("/owner")
-    public ResponseEntity<List<BookingDto>> getAllItemBookings(@RequestHeader("X-Sharer-User-Id") Long ownerId,
-                                                               @RequestParam(defaultValue = "ALL", required = false) String state) {
+    public ResponseEntity<List<BookingResponseDto>> getAllItemBookings(@RequestHeader("X-Sharer-User-Id") Long ownerId,
+                                                                       @RequestParam(defaultValue = "ALL", required = false) String state) {
         return ResponseEntity.ok().body(bookingService.getAllItemBookings(ownerId, state));
     }
 
@@ -52,8 +54,8 @@ public class BookingController {
      * @param bookingId идентификатор бронирования, информацию о котором небходимо получить
      */
     @GetMapping("/{bookingId}")
-    public ResponseEntity<BookingDto> getBookingById(@RequestHeader("X-Sharer-User-Id") Long userId,
-                                                     @PathVariable Long bookingId) {
+    public ResponseEntity<BookingResponseDto> getBookingById(@RequestHeader("X-Sharer-User-Id") Long userId,
+                                                             @PathVariable Long bookingId) {
         return ResponseEntity.ok().body(bookingService.getBookingById(userId, bookingId));
     }
 
@@ -67,8 +69,8 @@ public class BookingController {
      * @return DTO добавленного запроса на бронирование
      */
     @PostMapping
-    public ResponseEntity<BookingDto> addBooking(@RequestHeader("X-Sharer-User-Id") Long userId,
-                                                 BookingDto newBooking) {
+    public ResponseEntity<BookingResponseDto> addBooking(@RequestHeader("X-Sharer-User-Id") Long userId,
+                                                         @RequestBody BookingRequestDto newBooking) {
         return ResponseEntity.status(HttpStatus.CREATED).body(bookingService.addBooking(userId, newBooking));
     }
 
@@ -81,10 +83,10 @@ public class BookingController {
      * @param approved если true - подтверждение бронирования, иначе - отклонение.
      * @return DTO запроса на бронирование с учетом его обновлённого состояния
      */
-    @PatchMapping("{bookingId}")
-    public ResponseEntity<BookingDto> approveBooking(@RequestHeader("X-Sharer-User-Id") Long userId,
-                                                     @PathVariable Long bookingId,
-                                                     @RequestParam boolean approved) {
+    @PatchMapping("/{bookingId}")
+    public ResponseEntity<BookingResponseDto> approveBooking(@RequestHeader("X-Sharer-User-Id") Long userId,
+                                                             @PathVariable Long bookingId,
+                                                             @RequestParam boolean approved) {
         return ResponseEntity.ok().body(bookingService.approveBooking(userId, bookingId, approved));
     }
 
