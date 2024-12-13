@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import ru.practicum.shareit.booking.BookingStorage;
 import ru.practicum.shareit.booking.model.Booking;
 import ru.practicum.shareit.booking.model.BookingFilter;
+import ru.practicum.shareit.booking.model.BookingStatus;
 import ru.practicum.shareit.errors.NotFoundException;
 import ru.practicum.shareit.errors.ForbidenForUserOperationException;
 import ru.practicum.shareit.errors.ValidationException;
@@ -96,7 +97,10 @@ public class ItemServiceImpl implements ItemService {
             return Collections.emptyList();
         } else {
             log.info("Получен поисковой запрос: {}", text);
-            return itemStorage.findItems(text).stream().map(i -> itemMapper.itemToItemDto(i, false)).toList();
+            return itemStorage.findItems(text).stream()
+                    .filter(Item::getAvailable)
+                    .map(i -> itemMapper.itemToItemDto(i, false))
+                    .toList();
         }
     }
 
@@ -152,9 +156,10 @@ public class ItemServiceImpl implements ItemService {
         List<Booking> itemBookingsByAuthor = bookingStorage.getAllItemBookings(existItem.get(), BookingFilter.ALL)
                 .stream()
                 .filter(b -> authorId.equals(b.getRequestedUser().getId()))
+                .filter(b -> BookingStatus.APPROVED.equals(b.getStatus()))
                 .toList();
         if (itemBookingsByAuthor.isEmpty()) {
-            throw new ForbidenForUserOperationException("Пользователь " + author.get().getName() + " не имеет права " +
+            throw new ValidationException("Пользователь " + author.get().getName() + " не имеет права " +
                     "оставлять отзыв на вещь " + existItem.get().getName() + " т.к. никогда не брал её в аренду");
         }
         log.info("Пользователь {} имеет право оставить отзыв на вещь {}", author.get().getName(), existItem.get().getName());

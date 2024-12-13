@@ -14,15 +14,13 @@ import ru.practicum.shareit.errors.ParameterNotValidException;
 import ru.practicum.shareit.errors.ValidationException;
 import ru.practicum.shareit.item.ItemMapper;
 import ru.practicum.shareit.item.ItemService;
+import ru.practicum.shareit.item.ItemStorage;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.user.UserStorage;
 import ru.practicum.shareit.user.model.User;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 @Slf4j
@@ -30,6 +28,7 @@ import java.util.Optional;
 public class BookingServiceImpl implements BookingService {
 
     private final ItemService itemService;
+    private final ItemStorage itemStorage;
     private final BookingStorage bookingStorage;
     private final UserStorage userStorage;
     private final ItemMapper itemMapper;
@@ -88,13 +87,13 @@ public class BookingServiceImpl implements BookingService {
     public BookingResponseDto addBooking(Long userId, BookingRequestDto newBooking) {
         log.info("Получен запрос на добавление бронирования вещи с id = {} пользователем с id = {}",
                 newBooking.getItemId(), userId);
-        isBookingRequestValid(newBooking);
-        Booking booking = bookingMapper.bookingRequestDtoToBooking(newBooking);
         Optional<User> requestedUser = userStorage.getUserById(userId);
         if (requestedUser.isEmpty()) {
             throw new NotFoundException("Пользователь c id = " + userId + ", не найден");
         } else {
             log.info("Пользователь с id = {} существует", userId);
+            isBookingRequestValid(newBooking);
+            Booking booking = bookingMapper.bookingRequestDtoToBooking(newBooking);
             booking.setRequestedUser(requestedUser.get());
             booking.setStatus(BookingStatus.WAITING);
             return bookingStorage.addBooking(booking).map(bookingMapper::bookingToBookingResponseDto).get();
@@ -153,17 +152,12 @@ public class BookingServiceImpl implements BookingService {
         if (now.isAfter(start) || now.isAfter(end)) {
             throw new ValidationException("У бронирования дата начала и дата конца не должны быть в прошлом");
         }
-        try {
-            itemService.getItemById(newBooking.getItemId());
-        } catch (NoSuchElementException e) {
+        Optional<Item> requestedItem = itemStorage.getItemById(newBooking.getItemId());
+        if (requestedItem.isEmpty()) {
             throw new NotFoundException("Бронируемая вещь с id = " + newBooking.getItemId() + " не найдена");
         }
-        List<BookingResponseDto> itemBookings = getAllItemBookings(newBooking.getItemId(), BookingFilter.ALL.name());
-        List<BookingResponseDto> blockingItemBookings = itemBookings.stream()
-                .filter(b -> start.isAfter(b.getEnd()))
-                .toList();
-        if (!blockingItemBookings.isEmpty()) {
-            throw new ValidationException("У бронирования дата начала и дата конца не должны быть в прошлом");
+        if (!requestedItem.get().getAvailable()) {
+            throw new ValidationException("На данный момент вещь недоступна для броинрования");
         }
     }
 

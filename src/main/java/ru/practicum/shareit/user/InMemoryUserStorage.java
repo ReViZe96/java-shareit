@@ -7,7 +7,6 @@ import ru.practicum.shareit.user.model.User;
 import java.util.*;
 
 @Component("inMemoryUserStorage")
-//@Primary
 public class InMemoryUserStorage implements UserStorage {
 
     private HashMap<Long, User> users = new HashMap<>();

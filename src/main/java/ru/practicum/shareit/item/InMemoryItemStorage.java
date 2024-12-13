@@ -10,7 +10,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Component("inMemoryItemStorage")
-//@Primary
 public class InMemoryItemStorage implements ItemStorage {
 
     private HashMap<Long, Item> items = new HashMap<>();
