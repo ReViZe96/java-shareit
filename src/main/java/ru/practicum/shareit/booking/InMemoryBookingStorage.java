@@ -20,8 +20,8 @@ public class InMemoryBookingStorage implements BookingStorage {
     @Override
     public List<Booking> getAllUserBookings(User user, BookingFilter filter) {
         List<Booking> userBookings = bookings.values()
-                .stream().
-                filter(b -> user.equals(b.getRequestedUser()))
+                .stream()
+                .filter(b -> user.equals(b.getRequestedUser()))
                 .toList();
         switch (filter) {
             case ALL:
@@ -40,8 +40,8 @@ public class InMemoryBookingStorage implements BookingStorage {
     @Override
     public List<Booking> getAllItemBookings(Item item, BookingFilter filter) {
         List<Booking> itemBookings = bookings.values()
-                .stream().
-                filter(b -> item.equals(b.getRequestedItem()))
+                .stream()
+                .filter(b -> item.equals(b.getRequestedItem()))
                 .toList();
         switch (filter) {
             case ALL:
