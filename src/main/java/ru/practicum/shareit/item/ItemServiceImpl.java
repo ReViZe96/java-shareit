@@ -17,6 +17,7 @@ import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.UserStorage;
 
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
@@ -153,14 +154,20 @@ public class ItemServiceImpl implements ItemService {
         if (existItem.isEmpty()) {
             throw new NotFoundException("Вещь с id = " + itemId + " не найдена");
         }
+        if (authorId.equals(existItem.get().getOwner().getId())) {
+            throw new ValidationException("Владелец вещи не может оставлять отзыв о своей вещи");
+        }
+        LocalDateTime now = LocalDateTime.now();
         List<Booking> itemBookingsByAuthor = bookingStorage.getAllItemBookings(existItem.get(), BookingFilter.ALL)
                 .stream()
                 .filter(b -> authorId.equals(b.getRequestedUser().getId()))
                 .filter(b -> BookingStatus.APPROVED.equals(b.getStatus()))
+                .filter(b -> now.isAfter(b.getEnd()))
                 .toList();
         if (itemBookingsByAuthor.isEmpty()) {
             throw new ValidationException("Пользователь " + author.get().getName() + " не имеет права " +
-                    "оставлять отзыв на вещь " + existItem.get().getName() + " т.к. никогда не брал её в аренду");
+                    "оставлять отзыв на вещь " + existItem.get().getName() + " т.к. никогда не брал её в аренду, " +
+                    "либо срок аренды еще не истёк");
         }
         log.info("Пользователь {} имеет право оставить отзыв на вещь {}", author.get().getName(), existItem.get().getName());
         HashMap<Item, User> validEntities = new HashMap<>();
