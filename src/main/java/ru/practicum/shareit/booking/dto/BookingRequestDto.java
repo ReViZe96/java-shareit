@@ -7,8 +7,8 @@ import java.time.LocalDateTime;
 @Data
 public class BookingRequestDto {
 
-    Long itemId;
-    LocalDateTime start;
-    LocalDateTime end;
+    private Long itemId;
+    private LocalDateTime start;
+    private LocalDateTime end;
 
 }

@@ -16,6 +16,7 @@ import ru.practicum.shareit.item.ItemMapper;
 import ru.practicum.shareit.item.ItemService;
 import ru.practicum.shareit.item.ItemStorage;
 import ru.practicum.shareit.item.model.Item;
+import ru.practicum.shareit.user.UserMapper;
 import ru.practicum.shareit.user.UserStorage;
 import ru.practicum.shareit.user.model.User;
 
@@ -32,6 +33,7 @@ public class BookingServiceImpl implements BookingService {
     private final BookingStorage bookingStorage;
     private final UserStorage userStorage;
     private final ItemMapper itemMapper;
+    private final UserMapper userMapper;
     private final BookingMapper bookingMapper;
 
 
@@ -42,7 +44,7 @@ public class BookingServiceImpl implements BookingService {
         log.info("Запрос всех бронирований пользователя {}", existRequestedUser.getName());
         return bookingStorage.getAllUserBookings(existRequestedUser, existFilter)
                 .stream()
-                .map(bookingMapper::bookingToBookingResponseDto)
+                .map(b -> getBookingResponse(b, false))
                 .toList();
     }
 
@@ -60,7 +62,7 @@ public class BookingServiceImpl implements BookingService {
                 log.info("Запрос бронирований вещи {}", ownerItem.getName());
                 result.addAll(bookingStorage.getAllItemBookings(ownerItem, existFilter));
             }
-            return result.stream().map(bookingMapper::bookingToBookingResponseDto).toList();
+            return result.stream().map(b -> getBookingResponse(b, true)).toList();
         }
     }
 
@@ -78,7 +80,7 @@ public class BookingServiceImpl implements BookingService {
                         "информацию о бронировании с id = " + bookingId + " т.к. он не бронировал эту вещь и " +
                         "не является владельцем бронирумой вещи");
             } else {
-                return booking.map(bookingMapper::bookingToBookingResponseDto).get();
+                return booking.map(b -> getBookingResponse(b, false)).get();
             }
         }
     }
@@ -92,11 +94,11 @@ public class BookingServiceImpl implements BookingService {
             throw new NotFoundException("Пользователь c id = " + userId + ", не найден");
         } else {
             log.info("Пользователь с id = {} существует", userId);
-            isBookingRequestValid(newBooking);
-            Booking booking = bookingMapper.bookingRequestDtoToBooking(newBooking);
+            Item requestedItem = isBookingRequestValid(newBooking);
+            Booking booking = bookingMapper.bookingRequestDtoToBooking(newBooking, requestedItem);
             booking.setRequestedUser(requestedUser.get());
             booking.setStatus(BookingStatus.WAITING);
-            return bookingStorage.addBooking(booking).map(bookingMapper::bookingToBookingResponseDto).get();
+            return bookingStorage.addBooking(booking).map(b -> getBookingResponse(b, false)).get();
         }
     }
 
@@ -113,7 +115,7 @@ public class BookingServiceImpl implements BookingService {
                         " т.к. не является владельцем данной вещи");
             } else {
                 return bookingStorage.approveBooking(booking.get(), approved)
-                        .map(bookingMapper::bookingToBookingResponseDto).get();
+                        .map(b -> getBookingResponse(b, false)).get();
             }
         }
     }
@@ -139,7 +141,7 @@ public class BookingServiceImpl implements BookingService {
         }
     }
 
-    private void isBookingRequestValid(BookingRequestDto newBooking) {
+    private Item isBookingRequestValid(BookingRequestDto newBooking) {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime start = newBooking.getStart();
         LocalDateTime end = newBooking.getEnd();
@@ -159,6 +161,25 @@ public class BookingServiceImpl implements BookingService {
         if (!requestedItem.get().getAvailable()) {
             throw new ValidationException("На данный момент вещь недоступна для броинрования");
         }
+        return requestedItem.get();
+    }
+
+    /**
+     * Сформировать DTO бронирования, возвращаемое в ответ на запрос.
+     * Поля, содержащие информацию о последнем и ближайшем следующем бронировании вещи
+     * заполняются только в ответ на запрос владельца вещи
+     *
+     * @param booking         обрабатываемое бронирование
+     * @param isOwnerResponse является ли пользователь, запрашивающий информацию о бронировании, владельцем бронируемой вещи
+     */
+    private BookingResponseDto getBookingResponse(Booking booking, boolean isOwnerResponse) {
+        Item requestedItem = booking.getRequestedItem();
+        return bookingMapper.bookingToBookingResponseDto(booking,
+                userMapper.userToUserDto(booking.getRequestedUser()),
+                itemMapper.itemToItemDto(requestedItem, itemService.findLastItemBooking(requestedItem),
+                        itemService.findNextItemBooking(requestedItem),
+                        itemService.findAllItemComments(requestedItem),
+                        isOwnerResponse));
     }
 
 }

@@ -3,6 +3,7 @@ package ru.practicum.shareit.item;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import ru.practicum.shareit.booking.BookingRepository;
 import ru.practicum.shareit.booking.BookingStorage;
 import ru.practicum.shareit.booking.model.Booking;
 import ru.practicum.shareit.booking.model.BookingFilter;
@@ -28,18 +29,22 @@ public class ItemServiceImpl implements ItemService {
     private final ItemStorage itemStorage;
     private final UserStorage userStorage;
     private final BookingStorage bookingStorage;
+    private final BookingRepository bookingRepository;
+    private final CommentRepository commentRepository;
     private final ItemMapper itemMapper;
     private final CommentMapper commentMapper;
 
 
     public List<ItemDto> getAllItems(Long ownerId) {
         log.info("Запрос всех вещей пользователя с id = {}", ownerId);
-        return itemStorage.getAllItems(ownerId).stream().map(i -> itemMapper.itemToItemDto(i, true)).toList();
+        return itemStorage.getAllItems(ownerId).stream().map(i -> itemMapper.itemToItemDto(i, findLastItemBooking(i),
+                findNextItemBooking(i), findAllItemComments(i), false)).toList();
     }
 
     public ItemDto getItemById(Long itemId) {
         log.info("Запрос информации о вещи с id = {}", itemId);
-        return itemStorage.getItemById(itemId).map(i -> itemMapper.itemToItemDto(i, false)).get();
+        return itemStorage.getItemById(itemId).map(i -> itemMapper.itemToItemDto(i, findLastItemBooking(i),
+                findNextItemBooking(i), findAllItemComments(i), false)).get();
     }
 
     public ItemDto addItem(ItemDto newItem, Long ownerId) {
@@ -52,7 +57,8 @@ public class ItemServiceImpl implements ItemService {
         User owner = userStorage.getUserById(ownerId).get();
         Item item = itemMapper.itemDtoToItem(newItem);
         item.setOwner(owner);
-        return itemStorage.addItem(item).map(i -> itemMapper.itemToItemDto(i, false)).get();
+        return itemStorage.addItem(item).map(i -> itemMapper.itemToItemDto(i, findLastItemBooking(i), findNextItemBooking(i),
+                findAllItemComments(i), false)).get();
     }
 
     public ItemDto editItem(Long itemId, ItemDto editedItem, Long ownerId) {
@@ -80,7 +86,8 @@ public class ItemServiceImpl implements ItemService {
             log.info("Обновляемая вещь существует в системе");
             if (existItem.get().getOwner().equals(owner)) {
                 itemStorage.editItem(itemId, updatedField, owner);
-                return itemStorage.getItemById(itemId).map(i -> itemMapper.itemToItemDto(i, false)).get();
+                return itemStorage.getItemById(itemId).map(i -> itemMapper.itemToItemDto(i, findLastItemBooking(i),
+                        findNextItemBooking(i), findAllItemComments(i), false)).get();
             } else {
                 throw new ForbidenForUserOperationException("Пользователю " + owner.getName() +
                         " запрещено редактировать информацию о вещи " +
@@ -100,7 +107,8 @@ public class ItemServiceImpl implements ItemService {
             log.info("Получен поисковой запрос: {}", text);
             return itemStorage.findItems(text).stream()
                     .filter(Item::getAvailable)
-                    .map(i -> itemMapper.itemToItemDto(i, false))
+                    .map(i -> itemMapper.itemToItemDto(i, findLastItemBooking(i), findNextItemBooking(i),
+                            findAllItemComments(i), false))
                     .toList();
         }
     }
@@ -108,9 +116,11 @@ public class ItemServiceImpl implements ItemService {
     public CommentDto addComment(Long itemId, CommentDto newComment, Long authorId) {
         log.info("Получен запрос на добавление отзыва на вещь с id = {} пользователя с id = {}", itemId, authorId);
         Map<Item, User> validEntities = isUserCanAddComment(itemId, authorId);
-        Comment comment = commentMapper.commentDtoToComment(newComment);
-        comment.setCommentedItem(validEntities.keySet().iterator().next());
-        comment.setAuthorName(validEntities.values().iterator().next());
+        Item commentedItem = validEntities.keySet().iterator().next();
+        User author = validEntities.values().iterator().next();
+        Comment comment = commentMapper.commentDtoToComment(newComment, commentedItem, author);
+        comment.setCommentedItem(commentedItem);
+        comment.setAuthorName(author);
         return itemStorage.addComment(comment).map(commentMapper::commentToCommentDto).get();
     }
 
@@ -173,6 +183,32 @@ public class ItemServiceImpl implements ItemService {
         HashMap<Item, User> validEntities = new HashMap<>();
         validEntities.put(existItem.get(), author.get());
         return validEntities;
+    }
+
+    public Booking findLastItemBooking(Item item) {
+        List<Booking> itemBookings = bookingRepository.findByRequestedItem(item);
+        LocalDateTime now = LocalDateTime.now();
+        return itemBookings.stream()
+                .filter(b -> now.isAfter(b.getStart()))
+                .min(Collections.reverseOrder())
+                .orElse(null);
+    }
+
+    public Booking findNextItemBooking(Item item) {
+        List<Booking> itemBookings = bookingRepository.findByRequestedItem(item);
+        LocalDateTime now = LocalDateTime.now();
+        return itemBookings.stream()
+                .filter(b -> now.isBefore(b.getStart()))
+                .sorted()
+                .findFirst()
+                .orElse(null);
+    }
+
+    public List<CommentDto> findAllItemComments(Item item) {
+        return commentRepository.findByCommentedItem(item)
+                .stream()
+                .map(commentMapper::commentToCommentDto)
+                .toList();
     }
 
 }
