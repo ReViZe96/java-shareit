@@ -3,6 +3,8 @@ package ru.practicum.shareit.booking;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.booking.dto.BookingRequestDto;
 import ru.practicum.shareit.booking.dto.BookingResponseDto;
 import ru.practicum.shareit.booking.model.Booking;
@@ -12,12 +14,13 @@ import ru.practicum.shareit.errors.ForbidenForUserOperationException;
 import ru.practicum.shareit.errors.NotFoundException;
 import ru.practicum.shareit.errors.ParameterNotValidException;
 import ru.practicum.shareit.errors.ValidationException;
+import ru.practicum.shareit.item.CommentMapper;
+import ru.practicum.shareit.item.CommentRepository;
 import ru.practicum.shareit.item.ItemMapper;
-import ru.practicum.shareit.item.ItemService;
-import ru.practicum.shareit.item.ItemStorage;
+import ru.practicum.shareit.item.ItemRepository;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.user.UserMapper;
-import ru.practicum.shareit.user.UserStorage;
+import ru.practicum.shareit.user.UserRepository;
 import ru.practicum.shareit.user.model.User;
 
 import java.time.LocalDateTime;
@@ -28,49 +31,66 @@ import java.util.*;
 @RequiredArgsConstructor
 public class BookingServiceImpl implements BookingService {
 
-    private final ItemService itemService;
-    private final ItemStorage itemStorage;
-    private final BookingStorage bookingStorage;
-    private final UserStorage userStorage;
+    private final ItemRepository itemRepository;
+    private final UserRepository userRepository;
+    private final BookingRepository bookingRepository;
+    private final CommentRepository commentRepository;
     private final ItemMapper itemMapper;
     private final UserMapper userMapper;
     private final BookingMapper bookingMapper;
+    private final CommentMapper commentMapper;
 
 
     @Override
+    @Transactional(readOnly = true)
     public List<BookingResponseDto> getAllUserBookings(Long requestedUserId, String state) {
         User existRequestedUser = isUserExist(requestedUserId);
         BookingFilter existFilter = isBookingFilterExist(state);
         log.info("Запрос всех бронирований пользователя {}", existRequestedUser.getName());
-        return bookingStorage.getAllUserBookings(existRequestedUser, existFilter)
-                .stream()
+
+        List<Booking> userBookings = bookingRepository.findByRequestedUser(existRequestedUser);
+        List<Booking> result;
+        switch (existFilter) {
+            case ALL:
+                result = userBookings;
+                break;
+            case CURRENT, PAST, FUTURE:
+                result = filterBookingsByTimeFilter(userBookings, existFilter);
+                break;
+            default:
+                BookingStatus status = BookingStatus.valueOf(existFilter.name());
+                result = bookingRepository.findByRequestedUserAndStatus(existRequestedUser, status);
+        }
+        return result.stream()
                 .map(b -> getBookingResponse(b, false))
                 .toList();
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<BookingResponseDto> getAllItemBookings(Long ownerId, String state) {
-        isUserExist(ownerId);
+        User owner = isUserExist(ownerId);
         BookingFilter existFilter = isBookingFilterExist(state);
         log.info("Запрос всех вещей, которыми владеет пользователь с id = {}", ownerId);
-        List<Item> ownersItems = itemService.getAllItems(ownerId).stream().map(itemMapper::itemDtoToItem).toList();
+        List<Item> ownersItems = itemRepository.findByOwner(owner);
         if (ownersItems.isEmpty()) {
             throw new NotFoundException("Пользователь с id = " + ownerId + " не является владельцем ни для одной вещи");
         } else {
             List<Booking> result = new ArrayList<>();
             for (Item ownerItem : ownersItems) {
                 log.info("Запрос бронирований вещи {}", ownerItem.getName());
-                result.addAll(bookingStorage.getAllItemBookings(ownerItem, existFilter));
+                result.addAll(getItemAllBookings(ownerItem, existFilter));
             }
             return result.stream().map(b -> getBookingResponse(b, true)).toList();
         }
     }
 
     @Override
+    @Transactional(readOnly = true)
     public BookingResponseDto getBookingById(Long userId, Long bookingId) {
         isUserExist(userId);
         log.info("Запрос бронирования с id = {}", bookingId);
-        Optional<Booking> booking = bookingStorage.getBookingById(bookingId);
+        Optional<Booking> booking = bookingRepository.findById(bookingId);
         if (booking.isEmpty()) {
             throw new NotFoundException("Бронирование с id = " + bookingId + " не найдено");
         } else {
@@ -86,10 +106,11 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public BookingResponseDto addBooking(Long userId, BookingRequestDto newBooking) {
         log.info("Получен запрос на добавление бронирования вещи с id = {} пользователем с id = {}",
                 newBooking.getItemId(), userId);
-        Optional<User> requestedUser = userStorage.getUserById(userId);
+        Optional<User> requestedUser = userRepository.findById(userId);
         if (requestedUser.isEmpty()) {
             throw new NotFoundException("Пользователь c id = " + userId + ", не найден");
         } else {
@@ -98,14 +119,15 @@ public class BookingServiceImpl implements BookingService {
             Booking booking = bookingMapper.bookingRequestDtoToBooking(newBooking, requestedItem);
             booking.setRequestedUser(requestedUser.get());
             booking.setStatus(BookingStatus.WAITING);
-            return bookingStorage.addBooking(booking).map(b -> getBookingResponse(b, false)).get();
+            return Optional.of(bookingRepository.save(booking)).map(b -> getBookingResponse(b, false)).get();
         }
     }
 
     @Override
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public BookingResponseDto approveBooking(Long userId, Long bookingId, boolean approved) {
         log.info("Получен запрос на подтверждение/отклонение бронирования с id = {}", bookingId);
-        Optional<Booking> booking = bookingStorage.getBookingById(bookingId);
+        Optional<Booking> booking = bookingRepository.findById(bookingId);
         if (booking.isEmpty()) {
             throw new NotFoundException("Бронирование с id = " + bookingId + " не найдено");
         } else {
@@ -114,15 +136,54 @@ public class BookingServiceImpl implements BookingService {
                         "запрос на бронирование вещи " + booking.get().getRequestedItem().getName() +
                         " т.к. не является владельцем данной вещи");
             } else {
-                return bookingStorage.approveBooking(booking.get(), approved)
+                if (approved) {
+                    booking.get().setStatus(BookingStatus.APPROVED);
+                } else {
+                    booking.get().setStatus(BookingStatus.REJECTED);
+                }
+                return Optional.of(bookingRepository.save(booking.get()))
                         .map(b -> getBookingResponse(b, false)).get();
             }
         }
     }
 
+    @Override
+    public List<Booking> getItemAllBookings(Item item, BookingFilter filter) {
+        List<Booking> itemBookings = bookingRepository.findByRequestedItem(item);
+        switch (filter) {
+            case ALL:
+                return itemBookings;
+            case CURRENT, PAST, FUTURE:
+                filterBookingsByTimeFilter(itemBookings, filter);
+            default:
+                BookingStatus state = BookingStatus.valueOf(filter.name());
+                return bookingRepository.findByRequestedItemAndStatus(item, state);
+        }
+    }
+
+    @Override
+    public Booking findLastItemBooking(Item item) {
+        List<Booking> itemBookings = bookingRepository.findByRequestedItem(item);
+        LocalDateTime now = LocalDateTime.now();
+        return itemBookings.stream()
+                .filter(b -> now.isAfter(b.getStart()))
+                .min(Collections.reverseOrder())
+                .orElse(null);
+    }
+
+    @Override
+    public Booking findNextItemBooking(Item item) {
+        List<Booking> itemBookings = bookingRepository.findByRequestedItem(item);
+        LocalDateTime now = LocalDateTime.now();
+        return itemBookings.stream()
+                .filter(b -> now.isBefore(b.getStart()))
+                .sorted()
+                .findFirst()
+                .orElse(null);
+    }
 
     private User isUserExist(Long userId) {
-        Optional<User> owner = userStorage.getUserById(userId);
+        Optional<User> owner = userRepository.findById(userId);
         if (owner.isEmpty()) {
             throw new NotFoundException("Пользователь c id = " + userId + ", не найден");
         } else {
@@ -154,7 +215,7 @@ public class BookingServiceImpl implements BookingService {
         if (now.isAfter(start) || now.isAfter(end)) {
             throw new ValidationException("У бронирования дата начала и дата конца не должны быть в прошлом");
         }
-        Optional<Item> requestedItem = itemStorage.getItemById(newBooking.getItemId());
+        Optional<Item> requestedItem = itemRepository.findById(newBooking.getItemId());
         if (requestedItem.isEmpty()) {
             throw new NotFoundException("Бронируемая вещь с id = " + newBooking.getItemId() + " не найдена");
         }
@@ -176,10 +237,39 @@ public class BookingServiceImpl implements BookingService {
         Item requestedItem = booking.getRequestedItem();
         return bookingMapper.bookingToBookingResponseDto(booking,
                 userMapper.userToUserDto(booking.getRequestedUser()),
-                itemMapper.itemToItemDto(requestedItem, itemService.findLastItemBooking(requestedItem),
-                        itemService.findNextItemBooking(requestedItem),
-                        itemService.findAllItemComments(requestedItem),
+                itemMapper.itemToItemDto(requestedItem, findLastItemBooking(requestedItem),
+                        findNextItemBooking(requestedItem),
+                        commentRepository.findByCommentedItem(requestedItem).stream().map(commentMapper::commentToCommentDto).toList(),
                         isOwnerResponse));
+    }
+
+    /**
+     * Отфильтровать список бронирований относительно текущего момента времени
+     *
+     * @param bookingList список бронирований, который нужно отфильтровать
+     * @param timeFilter  каким образом выполнить фильтрацию
+     */
+    private List<Booking> filterBookingsByTimeFilter(List<Booking> bookingList, BookingFilter timeFilter) {
+        LocalDateTime now = LocalDateTime.now();
+        switch (timeFilter) {
+            case CURRENT:
+                return bookingList.stream()
+                        .filter(b -> now.isAfter(b.getStart()))
+                        .filter(b -> now.isBefore(b.getEnd()))
+                        .toList();
+            case PAST:
+                return bookingList.stream()
+                        .filter(b -> now.isAfter(b.getStart()))
+                        .filter(b -> now.isAfter(b.getEnd()))
+                        .toList();
+            case FUTURE:
+                return bookingList.stream()
+                        .filter(b -> now.isBefore(b.getStart()))
+                        .filter(b -> now.isBefore(b.getEnd()))
+                        .toList();
+            default:
+                throw new ParameterNotValidException("Передан некорректный фильтр бронирования");
+        }
     }
 
 }
