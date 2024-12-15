@@ -14,9 +14,9 @@ public class ErrorHandler {
         return new ErrorResponse(e.getMessage());
     }
 
-    @ExceptionHandler(NotOwnerTryEditException.class)
+    @ExceptionHandler(ForbidenForUserOperationException.class)
     @ResponseStatus(HttpStatus.FORBIDDEN)
-    public ErrorResponse handleNotOwnerTryEdit(NotOwnerTryEditException e) {
+    public ErrorResponse handleNotOwnerTryEdit(ForbidenForUserOperationException e) {
         return new ErrorResponse(e.getMessage());
     }
 

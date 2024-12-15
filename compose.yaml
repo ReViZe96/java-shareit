@@ -1,0 +1,64 @@
+# docker compose для БД при работе с postgres
+services:
+  db:
+    image: postgres:16.1
+    container_name: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./volumes/postgres:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_DB=shareit_db
+      - POSTGRES_USER=RVZ
+      - POSTGRES_PASSWORD=7S3d
+    healthcheck:
+      test: pg_isready -q -d $$POSTGRES_DB -U $$POSTGRES_USER
+      timeout: 5s
+      interval: 5s
+      retries: 10
+
+    # ещё один сервис
+  db-init:
+    image: postgres:16.1
+    container_name: db-init
+    # секция для указания зависимостей от других сервисов
+    depends_on:
+      # указываем, что этот сервис зависит от сервиса с именем db
+      db:
+        # указываем, что условием запуска будет момент, когда
+        # сервис db будет в «здоровом» состоянии
+        condition: service_healthy
+    entrypoint:
+      - bash
+      - -c
+      - |
+        set -e
+        psql postgresql://dbuser:12345@db:5432/shareit_db -v ON_ERROR_STOP=1 <<-EOSQL
+          CREATE TABLE IF NOT EXISTS users (
+                      id serial PRIMARY KEY,
+                      name varchar(255) NOT NULL,
+                      email varchar(512) NOT NULL,
+                      UNIQUE (email)
+        
+          );
+          CREATE TABLE IF NOT EXISTS items (
+                      id serial PRIMARY KEY,
+                      name varchar(512) NOT NULL,
+                      description varchar(1024) NOT NULL,
+                      is_available boolean NOT NULL,
+                      owner_id bigint REFERENCES users(id)
+          );
+          CREATE TABLE IF NOT EXISTS bookings (
+                      id serial PRIMARY KEY,
+                      status varchar(10) NOT NULL,
+                      user_id bigint REFERENCES users(id),
+                      item_id bigint REFERENCES items(id)
+          );
+          CREATE TABLE IF NOT EXISTS comments (
+                      id serial PRIMARY KEY,
+                      text varchar(5000) NOT NULL,
+                      created_date timestamp,
+                      user_id bigint REFERENCES users(id),
+                      item_id bigint REFERENCES items(id)
+                            
+        );
