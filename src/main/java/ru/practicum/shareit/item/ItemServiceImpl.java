@@ -14,6 +14,7 @@ import ru.practicum.shareit.errors.ForbidenForUserOperationException;
 import ru.practicum.shareit.errors.ValidationException;
 import ru.practicum.shareit.item.dto.CommentDto;
 import ru.practicum.shareit.item.dto.ItemDto;
+import ru.practicum.shareit.item.dto.RequestedItemDto;
 import ru.practicum.shareit.item.model.Comment;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.user.UserRepository;
@@ -82,6 +83,14 @@ public class ItemServiceImpl implements ItemService {
                     commentRepository.findByCommentedItem(i).stream().map(commentMapper::commentToCommentDto).toList(),
                     false))
                 .get();
+    }
+
+    @Override
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public ItemDto addItemOnRequest(RequestedItemDto requestedItem, Long ownerId) {
+        log.info("Получен запрос на добавление вещи, описанной в запросе на бронирование с id = {}", requestedItem.getRequestId());
+
+
     }
 
     @Override

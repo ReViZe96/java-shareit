@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.shareit.item.dto.CommentDto;
 import ru.practicum.shareit.item.dto.ItemDto;
+import ru.practicum.shareit.item.dto.RequestedItemDto;
 
 import java.util.List;
 
@@ -15,7 +16,6 @@ import java.util.List;
 public class ItemController {
 
     private final ItemService itemService;
-
 
     /**
      * Просмотр владельцем списка всех его вещей с указанием названия и описания для каждой из них
@@ -49,6 +49,21 @@ public class ItemController {
                                            @RequestHeader("X-Sharer-User-Id") Long ownerId) {
         return ResponseEntity.status(HttpStatus.CREATED).body(itemService.addItem(newItem, ownerId));
     }
+
+    /**
+     * Добавление вещи, запрошенной другим пользователем.
+     * Добавляемая вещь может не содержать названия, описания или значения доступности.
+     * @param requestedItem DTO добавляемой вещи с полем, указывающим id запроса,
+     *                      в ответ на который создаётся нужная вещь (requestId).
+     * @param ownerId идентификатор пользователя, который добавляет вещь. Именно этот пользователь — владелец вещи.
+     * @return DTO добавленной вещи.
+     */
+    @PostMapping
+    public ResponseEntity<ItemDto> addItemOnRequest(@RequestBody RequestedItemDto requestedItem,
+                                           @RequestHeader("X-Sharer-User-Id") Long ownerId) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(itemService.addItemOnRequest(requestedItem, ownerId));
+    }
+
 
     /**
      * Редактирование иформации о вещи. Изменить можно название, описание и статус доступа к аренде.

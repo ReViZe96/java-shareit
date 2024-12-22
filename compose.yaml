@@ -43,9 +43,9 @@ services:
           );
           CREATE TABLE IF NOT EXISTS items (
                       id serial PRIMARY KEY,
-                      name varchar(512) NOT NULL,
-                      description varchar(1024) NOT NULL,
-                      is_available boolean NOT NULL,
+                      name varchar(512),
+                      description varchar(1024),
+                      is_available boolean,
                       owner_id bigint REFERENCES users(id)
           );
           CREATE TABLE IF NOT EXISTS bookings (
