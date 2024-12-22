@@ -14,9 +14,10 @@ import ru.practicum.shareit.errors.ForbidenForUserOperationException;
 import ru.practicum.shareit.errors.ValidationException;
 import ru.practicum.shareit.item.dto.CommentDto;
 import ru.practicum.shareit.item.dto.ItemDto;
-import ru.practicum.shareit.item.dto.RequestedItemDto;
 import ru.practicum.shareit.item.model.Comment;
 import ru.practicum.shareit.item.model.Item;
+import ru.practicum.shareit.request.ItemRequestRepository;
+import ru.practicum.shareit.request.model.ItemRequest;
 import ru.practicum.shareit.user.UserRepository;
 import ru.practicum.shareit.user.model.User;
 
@@ -32,6 +33,7 @@ public class ItemServiceImpl implements ItemService {
     private final ItemRepository itemRepository;
     private final UserRepository userRepository;
     private final CommentRepository commentRepository;
+    private final ItemRequestRepository requestRepository;
     private final ItemMapper itemMapper;
     private final CommentMapper commentMapper;
 
@@ -69,6 +71,9 @@ public class ItemServiceImpl implements ItemService {
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public ItemDto addItem(ItemDto newItem, Long ownerId) {
         log.info("Получен запрос на добавление вещи под названием {}", newItem.getName());
+        if (newItem.getRequestId() != null && requestRepository.findById(newItem.getRequestId()).isEmpty()) {
+            throw new ValidationException("Запроса с id = " + newItem.getRequestId() + " на создание новой вещи не существует");
+        }
         checkItemName(newItem);
         checkItemDescription(newItem);
         checkItemAvailable(newItem);
@@ -77,20 +82,22 @@ public class ItemServiceImpl implements ItemService {
         User owner = userRepository.findById(ownerId).get();
         Item item = itemMapper.itemDtoToItem(newItem);
         item.setOwner(owner);
-        return Optional.of(itemRepository.save(item))
+        Item createdItem = null;
+        if (newItem.getRequestId() != null) {
+            Long createdItemId = itemRepository.save(item).getId();
+            createdItem = itemRepository.findById(createdItemId).get();
+            ItemRequest request = requestRepository.findById(newItem.getRequestId()).get();
+            request.setRequestedItems(createdItem);
+            requestRepository.save(request);
+        } else {
+            createdItem = itemRepository.save(item);
+        }
+        return Optional.of(createdItem)
                 .map(i -> itemMapper.itemToItemDto(i, bookingService.findLastItemBooking(i),
                     bookingService.findNextItemBooking(i),
                     commentRepository.findByCommentedItem(i).stream().map(commentMapper::commentToCommentDto).toList(),
                     false))
                 .get();
-    }
-
-    @Override
-    @Transactional(isolation = Isolation.READ_COMMITTED)
-    public ItemDto addItemOnRequest(RequestedItemDto requestedItem, Long ownerId) {
-        log.info("Получен запрос на добавление вещи, описанной в запросе на бронирование с id = {}", requestedItem.getRequestId());
-
-
     }
 
     @Override

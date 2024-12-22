@@ -14,7 +14,7 @@ import java.util.List;
 public class ItemRequestMapper {
 
     public ItemRequest itemRequestDtoToItemRequest(ItemRequestDto requestDto, Long requestedUserId,
-                                                   List<Item> requestedItems) {
+                                                   Item requestedItems) {
         ItemRequest request = new ItemRequest();
         request.setId(null);
         request.setDescription(requestDto.getDescription());
@@ -25,13 +25,13 @@ public class ItemRequestMapper {
         return request;
     }
 
-    public ItemRequestResponseDto itemRequestToItemRequestResponseDto(ItemRequest request, List<AvailableItemDto> availableItems) {
+    public ItemRequestResponseDto itemRequestToItemRequestResponseDto(ItemRequest request, AvailableItemDto availableItem) {
         ItemRequestResponseDto responseDto = new ItemRequestResponseDto();
         responseDto.setId(request.getId());
         responseDto.setDescription(request.getDescription());
         responseDto.setCreated(true);
         responseDto.setCreationDate(request.getCreationDate());
-        responseDto.setAvailableItems(availableItems);
+        responseDto.setItems(availableItem != null ? List.of(availableItem) : null);
         return responseDto;
     }
 

@@ -13,7 +13,6 @@ public class ItemRequestResponseDto {
     private String description;
     private Boolean created;
     private LocalDateTime creationDate;
-    //id вещи, название, id владельца
-    private List<AvailableItemDto> availableItems;
+    private List<AvailableItemDto> items;
 
 }

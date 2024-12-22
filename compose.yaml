@@ -60,5 +60,12 @@ services:
                       created_date timestamp,
                       user_id bigint REFERENCES users(id),
                       item_id bigint REFERENCES items(id)
-                            
+        
+        );
+        CREATE TABLE IF NOT EXISTS requests (
+                      id serial PRIMARY KEY,
+                      description varchar(5000) NOT NULL,
+                      is_created boolean,
+                      user_id bigint,
+                      item_id bigint REFERENCES items(id)
         );

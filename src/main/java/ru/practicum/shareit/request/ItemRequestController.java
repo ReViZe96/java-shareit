@@ -16,18 +16,13 @@ public class ItemRequestController {
 
     private final ItemRequestService itemRequestService;
 
-    /*
-    Пользователь создаёт запрос на добавление вещи в том случае,
-    если не может найти нужную вещь с помощью поиска. Но при этом надеется,
-    что у кого-то она всё же имеется. Другие пользователи могут просматривать такие запросы.
-    Если у них есть описанная вещь и они готовы предоставить её в аренду, они смогут добавить её в ответ на запрос.
-    */
 
     /**
      * Получение текущим пользователем списка запросов, созданных другими пользователями.
      * С помощью этого эндпоинта пользователи смогут просматривать существующие запросы,
      * на которые они могли бы ответить.
      * Запросы сортируются по дате создания от более новых к более старым.
+     *
      * @param requestedUserId идентификатор текущего пользователя.
      * @return список DTO запросов всех других пользователей.
      */
@@ -42,17 +37,19 @@ public class ItemRequestController {
      * а также список ответов в формате: id вещи, название, id владельца.
      * В дальнейшем, используя указанные id вещей, можно будет получить подробную информацию о каждой из них.
      * Запросы должны возвращаться отсортированными от более новых к более старым.
+     *
      * @param requestedUserId идентификатор текущего пользователя.
      * @return список DTO запросов текущего пользователя.
      */
     @GetMapping
-    public ResponseEntity<List<ItemRequestResponseDto>> getOnlyThisUserRequests(@RequestHeader("X-Sharer-User-Id") Long requestedUserId)  {
+    public ResponseEntity<List<ItemRequestResponseDto>> getOnlyThisUserRequests(@RequestHeader("X-Sharer-User-Id") Long requestedUserId) {
         return ResponseEntity.ok(itemRequestService.getOnlyThisUserRequests(requestedUserId));
     }
 
     /**
      * Получение данных об одном конкретном запросе вместе с данными об ответах на него.
      * Посмотреть данные об отдельном запросе может любой пользователь.
+     *
      * @param requestId идентификатор запроса, информацию о котором требуется вернуть.
      * @return DTO требуемого запроса.
      */
@@ -64,13 +61,14 @@ public class ItemRequestController {
 
     /**
      * Добавление нового запроса вещи.
-     * @param itemRequest текст запроса, в котором пользователь описывает, какая именно вещь ему нужна.
+     *
+     * @param itemRequest     текст запроса, в котором пользователь описывает, какая именно вещь ему нужна.
      * @param requestedUserId идентификатор пользователя, который запрашивает вещь.
      * @return DTO запроса вещи
      */
     @PostMapping
     public ResponseEntity<ItemRequestResponseDto> addRequest(@RequestBody ItemRequestDto itemRequest,
-                                                            @RequestHeader("X-Sharer-User-Id") Long requestedUserId) {
+                                                             @RequestHeader("X-Sharer-User-Id") Long requestedUserId) {
         return ResponseEntity.status(HttpStatus.CREATED).body(itemRequestService.addRequest(itemRequest, requestedUserId));
     }
 
