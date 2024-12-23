@@ -178,6 +178,12 @@ public class ItemServiceImpl implements ItemService {
         return Optional.of(commentRepository.save(comment)).map(commentMapper::commentToCommentDto).get();
     }
 
+    @Override
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public void deleteAllItems() {
+        itemRepository.deleteAll();
+    }
+
 
     private void checkItemName(ItemDto item) {
         String name = item.getName();

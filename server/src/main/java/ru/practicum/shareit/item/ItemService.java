@@ -19,4 +19,6 @@ public interface ItemService {
 
     CommentDto addComment(Long itemId, CommentDto newComment, Long authorId);
 
+    void deleteAllItems();
+
 }

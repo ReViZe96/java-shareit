@@ -60,6 +60,11 @@ public class ItemRequestServiceImpl implements ItemRequestService {
                 .get();
     }
 
+    @Override
+    public void deleteAllRequests() {
+        itemRequestRepository.deleteAll();
+    }
+
 
     private ItemRequestResponseDto makeResponseDto(ItemRequest itemRequest) {
         Item availableItem = itemRequest.getRequestedItems();

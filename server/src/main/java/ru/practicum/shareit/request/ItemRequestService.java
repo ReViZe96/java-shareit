@@ -16,4 +16,5 @@ public interface ItemRequestService {
 
     ItemRequestResponseDto addRequest(ItemRequestDto itemRequest, Long requestedUserId);
 
+    void deleteAllRequests();
 }
