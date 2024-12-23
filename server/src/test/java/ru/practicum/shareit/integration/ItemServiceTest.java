@@ -12,10 +12,15 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.booking.BookingServiceImpl;
 import ru.practicum.shareit.booking.dto.BookingRequestDto;
+import ru.practicum.shareit.errors.ForbidenForUserOperationException;
+import ru.practicum.shareit.errors.ParameterNotValidException;
+import ru.practicum.shareit.errors.ValidationException;
 import ru.practicum.shareit.item.ItemServiceImpl;
 import ru.practicum.shareit.item.dto.CommentDto;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.model.Item;
+import ru.practicum.shareit.request.ItemRequestService;
+import ru.practicum.shareit.request.dto.ItemRequestDto;
 import ru.practicum.shareit.user.UserServiceImpl;
 import ru.practicum.shareit.user.dto.UserDto;
 import ru.practicum.shareit.user.model.User;
@@ -35,6 +40,7 @@ public class ItemServiceTest {
     private final ItemServiceImpl itemService;
     private final UserServiceImpl userService;
     private final BookingServiceImpl bookingService;
+    private final ItemRequestService requestService;
 
     private UserDto makeUserDto(String name, String email) {
         UserDto dto = new UserDto();
@@ -49,8 +55,17 @@ public class ItemServiceTest {
         dto.setDescription(description);
         dto.setAvailable(available);
         return dto;
-
     }
+
+    private ItemDto makeItemWithRequestIdDto(String name, String description, Boolean available, Long requestId) {
+        ItemDto itemDto = new ItemDto();
+        itemDto.setName(name);
+        itemDto.setDescription(description);
+        itemDto.setAvailable(available);
+        itemDto.setRequestId(requestId);
+        return itemDto;
+    }
+
 
     @BeforeEach
     public void addOwnerAndFirstItem() {
@@ -108,6 +123,20 @@ public class ItemServiceTest {
         assertThat(addedItemDto.getName(), equalTo(item.getName()));
         assertThat(addedItemDto.getDescription(), equalTo(item.getDescription()));
         assertThat(addedItemDto.getAvailable(), equalTo(item.getAvailable()));
+
+        ItemRequestDto requestDto = new ItemRequestDto();
+        requestDto.setDescription("first item request");
+        Long requestedUser = makeUserDto("RequestedUser", "requestedUser@email.com").getId();
+        Long requestId = requestService.addRequest(requestDto, requestedUser).getId();
+        ItemDto itemAddedOnRequest = makeItemWithRequestIdDto("Item on Request", "with requestId",
+                true, requestId);
+        ItemDto itemOnRequest = itemService.addItem(itemAddedOnRequest, ownerId);
+        assertThat(itemAddedOnRequest.getName(), equalTo(itemOnRequest.getName()));
+        assertThat(itemAddedOnRequest.getDescription(), equalTo(itemOnRequest.getDescription()));
+
+        ItemDto itemOnNotExistRequest = makeItemWithRequestIdDto("Item on not exist request",
+                "this request not exist", true, 1000L);
+        Assertions.assertThrowsExactly(ValidationException.class, () -> itemService.addItem(itemOnNotExistRequest, ownerId));
     }
 
     @Test
@@ -127,6 +156,12 @@ public class ItemServiceTest {
         assertThat(updatedItemDto.getName(), equalTo(item.getName()));
         assertThat(updatedItemDto.getDescription(), equalTo(item.getDescription()));
         assertThat(updatedItemDto.getAvailable(), equalTo(item.getAvailable()));
+
+        UserDto notOwner = makeUserDto("NotOwner", "notOwner@email.com");
+        Long notOwnerId = userService.addUser(notOwner).getId();
+
+        Assertions.assertThrowsExactly(ForbidenForUserOperationException.class, () -> itemService.editItem(updatedItemId,
+                updatedItemDto, notOwnerId));
     }
 
     @Test
@@ -141,6 +176,8 @@ public class ItemServiceTest {
         assertThat(foundedItems.size(), equalTo(2));
         Assertions.assertTrue(foundedItems.contains(firstFounded));
         Assertions.assertTrue(foundedItems.contains(secondFounded));
+
+        Assertions.assertThrowsExactly(ParameterNotValidException.class, () -> itemService.findItems(""));
     }
 
     @Test

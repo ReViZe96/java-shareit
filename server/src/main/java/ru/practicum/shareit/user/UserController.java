@@ -40,8 +40,7 @@ public class UserController {
 
     @DeleteMapping
     public ResponseEntity<DeleteDto> deleteAllUsers() {
-        userService.deleteAllUsers();
-        return ResponseEntity.ok().body(new DeleteDto("Все пользователи успешно удалены"));
+        return ResponseEntity.ok().body(userService.deleteAllUsers());
     }
 
     @DeleteMapping("/{userId}")

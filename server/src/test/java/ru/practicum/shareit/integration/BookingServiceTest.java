@@ -209,6 +209,8 @@ public class BookingServiceTest {
         assertThat(futureItemBookings.size(), equalTo(1));
         assertThat(futureItemBookings.get(0).getStatus(), equalTo(BookingStatus.REJECTED));
         assertThat(futureItemBookings.get(0).getRequestedItem().getId(), equalTo(requestedItem.getId()));
+
+        BookingFilter bookingFilter = BookingFilter.from("UNDEFINED");
     }
 
     @Test

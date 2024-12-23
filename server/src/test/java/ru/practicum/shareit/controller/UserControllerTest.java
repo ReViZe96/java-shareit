@@ -12,6 +12,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import ru.practicum.shareit.user.UserController;
 import ru.practicum.shareit.user.UserService;
+import ru.practicum.shareit.user.dto.DeleteDto;
 import ru.practicum.shareit.user.dto.UserDto;
 
 import java.nio.charset.StandardCharsets;
@@ -40,6 +41,8 @@ public class UserControllerTest {
 
     private UserDto userDto;
 
+    private DeleteDto deleteDto;
+
     @BeforeEach
     void setUp() {
         mvc = MockMvcBuilders
@@ -50,6 +53,8 @@ public class UserControllerTest {
         userDto.setId(1L);
         userDto.setName("First User");
         userDto.setEmail("john.doe@mail.com");
+
+        deleteDto = new DeleteDto("Все пользователи успешно удалены");
     }
 
 
@@ -107,6 +112,19 @@ public class UserControllerTest {
                 .andExpect(jsonPath("$.id", is(userDto.getId()), Long.class))
                 .andExpect(jsonPath("$.name", is(userDto.getName())))
                 .andExpect(jsonPath("$.email", is(userDto.getEmail())));
+    }
+
+    @Test
+    public void shouldDeleteAllUsers() throws Exception {
+        when(userService.deleteAllUsers())
+                .thenReturn(deleteDto);
+        mvc.perform(delete("/users")
+                        .content(mapper.writeValueAsString(deleteDto))
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result", is(deleteDto.getResult()), DeleteDto.class));
     }
 
 }

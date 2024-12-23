@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.errors.NotFoundException;
 import ru.practicum.shareit.errors.SameEmailException;
 import ru.practicum.shareit.errors.ValidationException;
+import ru.practicum.shareit.user.dto.DeleteDto;
 import ru.practicum.shareit.user.dto.UserDto;
 import ru.practicum.shareit.user.model.User;
 
@@ -66,9 +67,10 @@ public class UserServiceImpl implements UserService {
     }
 
     @Transactional(isolation = Isolation.READ_COMMITTED)
-    public void deleteAllUsers() {
+    public DeleteDto deleteAllUsers() {
         log.info("Получен запрос на удаление всех пользователей");
         userRepository.deleteAll();
+        return new DeleteDto("Все пользователи успешно удалены");
     }
 
     @Transactional(isolation = Isolation.READ_COMMITTED)

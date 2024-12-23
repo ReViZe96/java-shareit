@@ -7,6 +7,9 @@ import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
+import ru.practicum.shareit.errors.NotFoundException;
+import ru.practicum.shareit.errors.SameEmailException;
+import ru.practicum.shareit.errors.ValidationException;
 import ru.practicum.shareit.user.UserServiceImpl;
 import ru.practicum.shareit.user.dto.UserDto;
 import ru.practicum.shareit.user.model.User;
@@ -68,18 +71,23 @@ public class UserServiceTest {
 
     @Test
     public void shouldAddUser() {
-        UserDto addedUserDto = makeUserDto("AddedUser", "addedUser@email.com");
+        UserDto correctUserDto = makeUserDto("AddedUser", "addedUser@email.com");
 
-        Long addedUserId = userService.addUser(addedUserDto).getId();
+        Long addedUserId = userService.addUser(correctUserDto).getId();
         TypedQuery<User> query = em.createQuery("Select u from User u where u.name = :name and u.email = :email",
                 User.class);
         User user = query
-                .setParameter("name", addedUserDto.getName())
-                .setParameter("email", addedUserDto.getEmail())
+                .setParameter("name", correctUserDto.getName())
+                .setParameter("email", correctUserDto.getEmail())
                 .getSingleResult();
         assertThat(addedUserId, equalTo(user.getId()));
-        assertThat(addedUserDto.getName(), equalTo(user.getName()));
-        assertThat(addedUserDto.getEmail(), equalTo(user.getEmail()));
+        assertThat(correctUserDto.getName(), equalTo(user.getName()));
+        assertThat(correctUserDto.getEmail(), equalTo(user.getEmail()));
+
+        Assertions.assertThrowsExactly(SameEmailException.class, () -> userService.addUser(correctUserDto));
+
+        UserDto wrongUserDto = makeUserDto("", "");
+        Assertions.assertThrowsExactly(ValidationException.class, () -> userService.addUser(wrongUserDto));
     }
 
     @Test
@@ -96,6 +104,8 @@ public class UserServiceTest {
         assertThat(updatedUserId, equalTo(user.getId()));
         assertThat(updatedUserDto.getName(), equalTo(user.getName()));
         assertThat(updatedUserDto.getEmail(), equalTo(user.getEmail()));
+
+        Assertions.assertThrowsExactly(NotFoundException.class, () -> userService.updateUser(1000L, updatedUserDto));
     }
 
     @Test

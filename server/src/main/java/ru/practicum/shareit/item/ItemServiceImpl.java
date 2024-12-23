@@ -11,6 +11,7 @@ import ru.practicum.shareit.booking.model.BookingFilter;
 import ru.practicum.shareit.booking.model.BookingStatus;
 import ru.practicum.shareit.errors.NotFoundException;
 import ru.practicum.shareit.errors.ForbidenForUserOperationException;
+import ru.practicum.shareit.errors.ParameterNotValidException;
 import ru.practicum.shareit.errors.ValidationException;
 import ru.practicum.shareit.item.dto.CommentDto;
 import ru.practicum.shareit.item.dto.ItemDto;
@@ -148,8 +149,7 @@ public class ItemServiceImpl implements ItemService {
     @Transactional(readOnly = true)
     public List<ItemDto> findItems(String text) {
         if (text.isEmpty()) {
-            log.info("Поисковой запрос содержит пустую строку");
-            return Collections.emptyList();
+            throw new ParameterNotValidException("Поисковой запрос содержит пустую строку");
         } else {
             log.info("Получен поисковой запрос: {}", text);
             Set<Item> withContainedName = new HashSet<>(itemRepository.findAllByNameContainingIgnoreCase(text));
