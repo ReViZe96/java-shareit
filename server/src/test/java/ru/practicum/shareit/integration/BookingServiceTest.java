@@ -4,6 +4,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +16,8 @@ import ru.practicum.shareit.booking.dto.BookingResponseDto;
 import ru.practicum.shareit.booking.model.Booking;
 import ru.practicum.shareit.booking.model.BookingFilter;
 import ru.practicum.shareit.booking.model.BookingStatus;
+import ru.practicum.shareit.errors.ForbidenForUserOperationException;
+import ru.practicum.shareit.errors.NotFoundException;
 import ru.practicum.shareit.item.ItemMapper;
 import ru.practicum.shareit.item.ItemServiceImpl;
 import ru.practicum.shareit.item.dto.ItemDto;
@@ -199,6 +202,12 @@ public class BookingServiceTest {
 
         BookingResponseDto firstBookingAfterApprove = bookingService.approveBooking(ownerId, waitingBookingId, true);
         assertThat(firstBookingAfterApprove.getStatus(), equalTo(BookingStatus.APPROVED));
+
+        Assertions.assertThrowsExactly(ForbidenForUserOperationException.class, () -> bookingService.approveBooking(
+                requestedUserId, waitingBookingId, true));
+
+        Assertions.assertThrowsExactly(NotFoundException.class, () -> bookingService.approveBooking(
+                requestedUserId, 1000L, true));
     }
 
     @Test
