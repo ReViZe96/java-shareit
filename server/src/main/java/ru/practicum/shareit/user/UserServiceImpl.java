@@ -35,7 +35,7 @@ public class UserServiceImpl implements UserService {
         return userRepository.findById(userId).map(userMapper::userToUserDto).get();
     }
 
-    @Transactional(isolation = Isolation.READ_COMMITTED)
+    @Transactional
     public UserDto addUser(UserDto newUser) {
         log.info("Получен запрос на добавление пользователя с именем {}", newUser.getName());
         checkUserEmail(newUser);
@@ -44,7 +44,7 @@ public class UserServiceImpl implements UserService {
         return Optional.of(userRepository.save(user)).map(userMapper::userToUserDto).get();
     }
 
-    @Transactional(isolation = Isolation.READ_COMMITTED)
+    @Transactional
     public UserDto updateUser(Long userId, UserDto updateUser) {
         log.info("Получен запрос на редактирование информации о пользователе с id = {}", userId);
         Optional<User> existUser = userRepository.findById(userId);
@@ -66,14 +66,14 @@ public class UserServiceImpl implements UserService {
         }
     }
 
-    @Transactional(isolation = Isolation.READ_COMMITTED)
+    @Transactional
     public DeleteDto deleteAllUsers() {
         log.info("Получен запрос на удаление всех пользователей");
         userRepository.deleteAll();
         return new DeleteDto("Все пользователи успешно удалены");
     }
 
-    @Transactional(isolation = Isolation.READ_COMMITTED)
+    @Transactional
     public void deleteUserById(Long userId) {
         log.info("Получен запрос на удаление пользователя с id {}", userId);
         userRepository.deleteById(userId);

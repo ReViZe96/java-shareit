@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class BookItemRequestDto {
 
-    private long itemId;
+    private Long itemId;
     private LocalDateTime start;
     private LocalDateTime end;
 

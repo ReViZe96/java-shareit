@@ -104,7 +104,7 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
-    @Transactional(isolation = Isolation.READ_COMMITTED)
+    @Transactional
     public BookingResponseDto addBooking(Long userId, BookingRequestDto newBooking) {
         log.info("Получен запрос на добавление бронирования вещи с id = {} пользователем с id = {}",
                 newBooking.getItemId(), userId);
@@ -122,7 +122,7 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
-    @Transactional(isolation = Isolation.READ_COMMITTED)
+    @Transactional
     public BookingResponseDto approveBooking(Long userId, Long bookingId, boolean approved) {
         log.info("Получен запрос на подтверждение/отклонение бронирования с id = {}", bookingId);
         Optional<Booking> booking = bookingRepository.findById(bookingId);

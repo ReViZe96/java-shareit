@@ -69,7 +69,7 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    @Transactional(isolation = Isolation.READ_COMMITTED)
+    @Transactional
     public ItemDto addItem(ItemDto newItem, Long ownerId) {
         log.info("Получен запрос на добавление вещи под названием {}", newItem.getName());
         if (newItem.getRequestId() != null && requestRepository.findById(newItem.getRequestId()).isEmpty()) {
@@ -102,7 +102,7 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    @Transactional(isolation = Isolation.READ_COMMITTED)
+    @Transactional
     public ItemDto editItem(Long itemId, ItemDto editedItem, Long ownerId) {
         log.info("Получен запрос на редактирование информации о вещи с id = {}", itemId);
         User owner = isOwnerExist(ownerId).get();
@@ -166,7 +166,7 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    @Transactional(isolation = Isolation.READ_COMMITTED)
+    @Transactional
     public CommentDto addComment(Long itemId, CommentDto newComment, Long authorId) {
         log.info("Получен запрос на добавление отзыва на вещь с id = {} пользователя с id = {}", itemId, authorId);
         Map<Item, User> validEntities = isUserCanAddComment(itemId, authorId);
@@ -179,7 +179,7 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    @Transactional(isolation = Isolation.READ_COMMITTED)
+    @Transactional
     public void deleteAllItems() {
         itemRepository.deleteAll();
     }
